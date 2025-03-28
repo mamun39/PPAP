@@ -53,5 +53,5 @@ After running the server, visit `http://localhost:8000/docs` for interactive API
 Contributions are welcome! Feel free to open an issue or submit a pull request.
 
 ## License
-MIT License © 2025 Your Name / Company
+BUSINESS SOURCE LICENSE 1.1 © 2025 Mamunur Akand
 
