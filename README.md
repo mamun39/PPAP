@@ -19,16 +19,16 @@ PPAP is a secure AI proxy that allows users to interact with LLMs while ensuring
 ## Installation
 ### Using Docker
 ```sh
-git clone https://github.com/your-repo/privacy-preserving-ai-proxy.git
-cd privacy-preserving-ai-proxy
+git clone git@github.com:mamun39/PPAP.git
+cd PPAP
 docker build -t ppap .
 docker run -p 8000:8000 ppap
 ```
 
 ### Manual Setup
 ```sh
-git clone https://github.com/your-repo/privacy-preserving-ai-proxy.git
-cd privacy-preserving-ai-proxy
+git clone git@github.com:mamun39/PPAP.git
+cd PPAP
 python -m venv venv
 source venv/bin/activate  # On Windows use `venv\Scripts\activate`
 pip install -r requirements.txt
@@ -53,4 +53,5 @@ After running the server, visit `http://localhost:8000/docs` for interactive API
 Contributions are welcome! Feel free to open an issue or submit a pull request.
 
 ## License
-MIT License © 2025 Mamunur Akand
+MIT License © 2025 Your Name / Company
+
