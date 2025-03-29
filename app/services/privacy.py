@@ -1,11 +1,7 @@
 import logging
-import hashlib
 import yaml
-from pathlib import Path
-from typing import List, Dict, Optional, Union
+from typing import List, Optional, Union
 from presidio_analyzer import AnalyzerEngine, Pattern, PatternRecognizer, RecognizerResult
-from presidio_anonymizer import AnonymizerEngine
-import spacy
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -28,7 +24,7 @@ class PiiRedactor:
         
         Args:
             redaction_style: One of "full", "mask", or "hash".
-            custom_recognizers: List of recognizer configs (see `add_custom_recognizer` format).
+            recognizer_config_path: Path to YAML file with recognizer configurations.
         """
         self.redaction_style = redaction_style.lower()
         self.analyzer = AnalyzerEngine()
@@ -38,7 +34,7 @@ class PiiRedactor:
             self._load_recognizers_from_config(recognizer_config_path)
 
     def _load_default_recognizers(self) -> None:
-        """Built-in recognizers (e.g., basic phone numbers)."""
+        """Load built-in recognizers (e.g., basic phone numbers)."""
         self.add_custom_recognizer(
             entity_type="PHONE_NUMBER",
             patterns=[r"\b\d{3}[-.\s]?\d{4}\b"],
@@ -46,25 +42,33 @@ class PiiRedactor:
         )
 
     def _load_recognizers_from_config(self, config_path: str) -> None:
-        """Load recognizers from YAML config."""
+        """
+        Load recognizers from YAML config file.
+        
+        Args:
+            config_path: Path to YAML config file with recognizer definitions.
+        """
         try:
             with open(config_path, 'r') as f:
                 config = yaml.safe_load(f)
-                for recognizer in config.get('recognizers', []):
-                    patterns = [
-                        Pattern(name=p['name'], regex=p['regex'], score=p['score'])
-                        for p in recognizer['patterns']
-                    ]
-                    self.add_custom_recognizer(
-                        entity_type=recognizer['entity_type'],
-                        patterns=patterns,
-                        name=recognizer.get('name')
-                    )
+                
+            for recognizer in config.get('recognizers', []):
+                patterns = [
+                    Pattern(name=p['name'], regex=p['regex'], score=p.get('score', 0.9))
+                    for p in recognizer['patterns']
+                ]
+                self.add_custom_recognizer(
+                    entity_type=recognizer['entity_type'],
+                    patterns=patterns,
+                    name=recognizer.get('name')
+                )
             logger.info(f"Loaded recognizers from {config_path}")
         except FileNotFoundError:
             logger.warning(f"Config file not found: {config_path}")
         except yaml.YAMLError as e:
             logger.error(f"Invalid YAML in config: {e}")
+        except KeyError as e:
+            logger.error(f"Missing required key in config: {e}")
 
     def add_custom_recognizer(
         self,
@@ -72,12 +76,16 @@ class PiiRedactor:
         patterns: List[Union[str, Pattern]],
         name: Optional[str] = None
     ) -> None:
-        """Add a custom recognizer dynamically.
+        """
+        Add a custom recognizer dynamically.
         
         Args:
             entity_type: PII entity type (e.g., "IP_ADDRESS").
             patterns: List of regex patterns or `Pattern` objects.
             name: Optional recognizer name for debugging.
+        
+        Raises:
+            ValueError: If patterns list is empty.
         """
         if not patterns:
             raise ValueError("Patterns list cannot be empty.")
@@ -96,16 +104,24 @@ class PiiRedactor:
             name=name or f"Custom {entity_type} Recognizer"
         )
         self.analyzer.registry.add_recognizer(recognizer)
+        logger.debug(f"Added recognizer: {recognizer.name}")
 
     def redact_pii(self, text: str) -> str:
-        """Redact PII entities in text based on loaded recognizers.
+        """
+        Redact PII entities in text based on loaded recognizers.
         
         Args:
             text: Input string to redact.
         
         Returns:
             Redacted text with PII replaced according to `redaction_style`.
+            
+        Raises:
+            ValueError: If redaction_style is invalid.
         """
+        if not text:
+            return text
+            
         results = self.analyzer.analyze(text, language="en")
         if not results:
             return text
@@ -118,22 +134,52 @@ class PiiRedactor:
             raise ValueError(f"Invalid redaction_style: {self.redaction_style}")
 
     def _redact_full(self, text: str, results: List[RecognizerResult]) -> str:
-        """Replace PII with entity type labels (e.g., '<PHONE_NUMBER>')."""
+        """
+        Replace PII with entity type labels (e.g., '<PHONE_NUMBER>').
+        
+        Args:
+            text: Original text to redact.
+            results: List of recognized PII entities.
+            
+        Returns:
+            Text with PII replaced by entity type markers.
+        """
         sorted_results = sorted(results, key=lambda x: x.start, reverse=True)
         for result in sorted_results:
             text = text[:result.start] + f"<{result.entity_type}>" + text[result.end:]
         return text
 
     def _redact_mask(self, text: str, results: List[RecognizerResult]) -> str:
-        """Mask PII with asterisks (e.g., '***')."""
+        """
+        Mask PII with asterisks (e.g., '***').
+        
+        Args:
+            text: Original text to redact.
+            results: List of recognized PII entities.
+            
+        Returns:
+            Text with PII replaced by asterisks.
+        """
         sorted_results = sorted(results, key=lambda x: x.start, reverse=True)
         for result in sorted_results:
             text = text[:result.start] + "*" * (result.end - result.start) + text[result.end:]
         return text
 
     def get_supported_entities(self) -> List[str]:
-        """Return a list of supported PII entity types."""
-        return [recognizer.supported_entities for recognizer in self.analyzer.registry.recognizers]
+        """
+        Return a list of supported PII entity types.
+        
+        Returns:
+            List of entity types supported by loaded recognizers.
+        """
+        entities = []
+        for recognizer in self.analyzer.registry.recognizers:
+            if isinstance(recognizer.supported_entities, list):
+                entities.extend(recognizer.supported_entities)
+            else:
+                entities.append(recognizer.supported_entities)
+        return sorted(set(entities))  # Return unique, sorted entities
+
 
 # Example Usage
 if __name__ == "__main__":
@@ -147,4 +193,4 @@ if __name__ == "__main__":
 
     # Redact sample text
     sample = "Call +1 555 123 4567 or 456-7890 or connect to 192.168.1.1."
-    print(redactor.redact_pii(sample))  # Output: "Call ************ or connect to ***********."
+    print(redactor.redact_pii(sample))  # Output: "Call ************ or ******* or connect to ***********."
