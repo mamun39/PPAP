@@ -22,7 +22,7 @@ OPENAI_API_URL = os.getenv("OPENAI_API_URL", "https://api.openai.com/v1/chat/com
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY environment variable is required")
 
-app = FastAPI(title="AI Chat Proxy", version="1.0.0")
+app = FastAPI(title="Privacy-Preserving AI Proxy (PPAP)", version="1.0.0")
 
 class ChatRequest(BaseModel):
     message: str = Field(..., 
@@ -46,7 +46,7 @@ async def chat_with_proxy(
     """
     Processes chat request through PII redaction and OpenAI API proxy
     
-    - **request**: ChatRequest object containing user message
+    - Request: ChatRequest object containing user message
     - Returns: OpenAI API response with generated content
     """
     try:
