@@ -1,7 +1,5 @@
 import pytest
-import os
 import yaml
-from pathlib import Path
 from presidio_analyzer import Pattern
 
 from app.services.privacy import PiiRedactor

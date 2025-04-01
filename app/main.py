@@ -1,48 +1,105 @@
 import os
-import requests
 import logging
-from fastapi import FastAPI, Request
-from app.services.privacy import scrub_pii  # Import the scrub_pii function from your app's privacy module
+from fastapi import FastAPI, Request, HTTPException, Depends
+from pydantic import BaseModel, Field
+import httpx
 from dotenv import load_dotenv
+from app.services.privacy import PiiRedactor
 
-# Load environment variables from .env file
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Load environment variables
 load_dotenv()
 
-# Get OpenAI API key from environment variables
+# Validate required environment variables
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_API_URL = os.getenv("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY environment variable is required")
 
-# Initialize the FastAPI app
-app = FastAPI()
+app = FastAPI(title="AI Chat Proxy", version="1.0.0")
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., 
+        example="What's the weather in New York?",
+        min_length=1,
+        max_length=2000,
+        description="User message to be processed")
+
+async def get_redactor() -> PiiRedactor:
+    """Dependency that provides configured PiiRedactor instance"""
+    return PiiRedactor(
+        redaction_style="mask",
+        recognizer_config_path="app/utils/pii_recognizers.yaml"
+    )
 
 @app.post("/chat")
-async def chat_with_proxy(request: Request):
+async def chat_with_proxy(
+    request: ChatRequest,
+    redactor: PiiRedactor = Depends(get_redactor)
+) -> dict:
     """
-    Intercepts request, scrubs PII, and forwards to OpenAI API.
+    Processes chat request through PII redaction and OpenAI API proxy
+    
+    - **request**: ChatRequest object containing user message
+    - Returns: OpenAI API response with generated content
     """
-    # Get the message from the user query
-    data = await request.json()
-    user_query = data.get("message", "")
-
-    # Scrub sensitive info from the user input using the scrub_pii function
-    sanitized_query = scrub_pii(user_query)
-
-    logging.info("Sanitized Query: %s", sanitized_query)
-
-    # Prepare the request to OpenAI API
-    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
-    payload = {
-        "model": "gpt-4",  # You can replace with another model such as "gpt-3.5-turbo"
-        "messages": [{"role": "user", "content": sanitized_query}],
-    }
-
-    # Make the request to the OpenAI API
     try:
-        response = requests.post(OPENAI_API_URL, json=payload, headers=headers)
-        response.raise_for_status()  # Raise an error for bad responses (4xx, 5xx)
-        openai_response = response.json()
-    except requests.exceptions.RequestException as e:
-        return {"error": str(e)}
+        # Redact sensitive information
+        sanitized_query = redactor.redact_pii(request.message)
+        logger.info(f"Processed query (length: {len(sanitized_query)})")
 
-    # Return the response from OpenAI API back to the user
-    return openai_response
+        # Prepare API request
+        headers = {
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+            "User-Agent": "AI-Chat-Proxy/1.0"
+        }
+        payload = {
+            "model": "gpt-4o",
+            "messages": [{"role": "user", "content": sanitized_query}],
+            "temperature": 0.7
+        }
+
+        # Async HTTP request with timeout
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                OPENAI_API_URL,
+                json=payload,
+                headers=headers
+            )
+            response.raise_for_status()
+            return response.json()
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"OpenAI API error: {e.response.text}")
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail="Error processing request with AI service"
+        )
+    except httpx.RequestError as e:
+        logger.error(f"Network error: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to connect to AI service"
+        )
+    except ValueError as e:
+        logger.error(f"Validation error: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid request payload"
+        )
+
+@app.get("/health")
+async def health_check() -> dict:
+    """Service health check endpoint"""
+    return {
+        "status": "healthy",
+        "version": app.version,
+        "environment": os.getenv("ENVIRONMENT", "development")
+    }

@@ -30,7 +30,8 @@ recognizers:
         regex: "(?<=(?i)(?:social security(?: number| no\\.?| #)?|ssn)\\s*(?:is|:)?\\s*[^a-zA-Z]*?)\\d{3}[-\\s]*\\d{2}[-\\s]*\\d{4}"
         score: 0.98
       - name: "SSN with Context After"
-        regex: "(\\d{3}[-\\s]?\\d{2}[-\\s]?\\d{4})[^a-zA-Z]*?(?:is|as|being)?\\s*(?:my|his|her|their)?\\s*(?i)(?:social security(?: number| no\\.?| #)?|ssn)"
+        # Using positive lookahead to only match the SSN itself
+        regex: "\\d{3}[-\\s]*\\d{2}[-\\s]*\\d{4}(?=[^a-zA-Z]*?(?:is|as|being)?\\s*(?:my|his|her|their)?\\s*(?i)(?:social security(?: number| no\\.?| #)?|ssn))"
         score: 0.98
     name: "SSN Context-Aware Recognizer"
 
@@ -42,11 +43,13 @@ recognizers:
       - name: "Social Security Number Without Dashes"
         regex: "\\b\\d{9}\\b"
         score: 0.6
-      # Context-aware patterns
+      # Context-aware patterns with lookbehind/lookahead
       - name: "SSN with Context Before"
-        regex: "(?i)(?:social security(?: number| no\\.?| #)?|ssn)\\s*(?:is|:)?\\s*[^a-zA-Z]*?(\\d{3}[-\\s]?\\d{3}[-\\s]?\\d{3})"
+        # Using positive lookbehind to only match the SSN itself
+        regex: "(?<=(?i)(?:social security(?: number| no\\.?| #)?|ssn)\\s*(?:is|:)?\\s*[^a-zA-Z]*?)\\d{3}[-\\s]*\\d{3}[-\\s]*\\d{3}"
         score: 0.98
       - name: "SSN with Context After"
-        regex: "(\\d{3}[-\\s]?\\d{3}[-\\s]?\\d{3})[^a-zA-Z]*?(?:is|as|being)?\\s*(?:my|his|her|their)?\\s*(?i)(?:social security(?: number| no\\.?| #)?|ssn)"
+        # Using positive lookahead to only match the SSN itself
+        regex: "\\d{3}[-\\s]*\\d{3}[-\\s]*\\d{3}(?=[^a-zA-Z]*?(?:is|as|being)?\\s*(?:my|his|her|their)?\\s*(?i)(?:social security(?: number| no\\.?| #)?|ssn))"
         score: 0.98
     name: "SSN Context-Aware Recognizer"
