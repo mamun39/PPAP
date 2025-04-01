@@ -15,3 +15,38 @@ recognizers:
         regex: "\\b\\+\\d{1,3}\\s?\\d{1,4}[\\s.-]?\\d{3,4}[\\s.-]?\\d{3,4}\\b"
         score: 0.9
     name: "Enhanced Phone Recognizer"
+
+  - entity_type: "US_SSN"
+    patterns:
+      - name: "Social Security Number Standard"
+        regex: "\\b\\d{3}\\s*-\\s*\\d{2}\\s*-\\s*\\d{4}\\b"
+        score: 0.95
+      - name: "Social Security Number Without Dashes"
+        regex: "\\b\\d{9}\\b"
+        score: 0.6
+      # Context-aware patterns with lookbehind
+      - name: "SSN with Context Before"
+        # Using positive lookbehind to only match the SSN itself
+        regex: "(?<=(?i)(?:social security(?: number| no\\.?| #)?|ssn)\\s*(?:is|:)?\\s*[^a-zA-Z]*?)\\d{3}[-\\s]*\\d{2}[-\\s]*\\d{4}"
+        score: 0.98
+      - name: "SSN with Context After"
+        regex: "(\\d{3}[-\\s]?\\d{2}[-\\s]?\\d{4})[^a-zA-Z]*?(?:is|as|being)?\\s*(?:my|his|her|their)?\\s*(?i)(?:social security(?: number| no\\.?| #)?|ssn)"
+        score: 0.98
+    name: "SSN Context-Aware Recognizer"
+
+  - entity_type: "CA_SSN"
+    patterns:
+      - name: "Social Security Number Standard"
+        regex: "\\b\\d{3}\\s*-\\s*\\d{3}\\s*-\\s*\\d{3}\\b"
+        score: 0.95
+      - name: "Social Security Number Without Dashes"
+        regex: "\\b\\d{9}\\b"
+        score: 0.6
+      # Context-aware patterns
+      - name: "SSN with Context Before"
+        regex: "(?i)(?:social security(?: number| no\\.?| #)?|ssn)\\s*(?:is|:)?\\s*[^a-zA-Z]*?(\\d{3}[-\\s]?\\d{3}[-\\s]?\\d{3})"
+        score: 0.98
+      - name: "SSN with Context After"
+        regex: "(\\d{3}[-\\s]?\\d{3}[-\\s]?\\d{3})[^a-zA-Z]*?(?:is|as|being)?\\s*(?:my|his|her|their)?\\s*(?i)(?:social security(?: number| no\\.?| #)?|ssn)"
+        score: 0.98
+    name: "SSN Context-Aware Recognizer"

@@ -192,5 +192,5 @@ if __name__ == "__main__":
     print("Supported entities:", redactor.get_supported_entities())
 
     # Redact sample text
-    sample = "Call +1 555 123 4567 or 456-7890 or connect to 192.168.1.1."
+    sample = "Call +1 555 123 4567 or 456-7890 or connect to 192.168.1.1. My Social Security Number is 157-46-1864"
     print(redactor.redact_pii(sample))  # Output: "Call ************ or ******* or connect to ***********."
