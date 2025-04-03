@@ -14,25 +14,39 @@ PPAP is a secure AI proxy that allows users to interact with LLMs while ensuring
 - **Backend:** FastAPI, Python
 - **Privacy Tools:** spaCy, Presidio, PyCryptodome
 - **LLM Support:** OpenAI API, Local models (Mistral, TinyLlama)
-- **Deployment:** Docker, Kubernetes (future)
 
 ## Installation
-### Using Docker
-```sh
-git clone git@github.com:mamun39/PPAP.git
-cd PPAP
-docker build -t ppap .
-docker run -p 8000:8000 ppap
-```
-
 ### Manual Setup
 ```sh
 git clone git@github.com:mamun39/PPAP.git
 cd PPAP
 python -m venv venv
 source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-pip install -r requirements.txt
+poetry install
 uvicorn src.app:app --host 0.0.0.0 --port 8000
+```
+
+## Project Directory Structure
+```
+PPAP/
+│-- app/
+│   │-- services/
+│   │   │-- __init__.py
+│   │   │-- privacy.py
+│   │-- utils/
+│   │   │-- pii_recognizers.yaml
+│   │-- __init__.py
+│   │-- config.py
+│   │-- main.py
+│-- scripts/
+│   │-- run_fastapi.sh
+│   │-- test_api.sh
+│-- tests/
+│   │-- test_privacy.py
+│-- .gitignore
+│-- LICENSE
+│-- POETRY.TOML
+│-- README.md
 ```
 
 ## API Usage
