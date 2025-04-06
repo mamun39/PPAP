@@ -54,6 +54,8 @@ async def chat_with_proxy(
         sanitized_query = redactor.redact_pii(request.message)
         logger.info(f"Processed query (length: {len(sanitized_query)})")
 
+        system_message = "You will help testing a system that redacts personal information from inputs. For this test,  return the content of the message provided below, without including this introduction."
+
         # Prepare API request
         headers = {
             "Authorization": f"Bearer {OPENAI_API_KEY}",
@@ -62,7 +64,10 @@ async def chat_with_proxy(
         }
         payload = {
             "model": "gpt-4o",
-            "messages": [{"role": "user", "content": sanitized_query}],
+            "messages": [
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": sanitized_query}
+            ],
             "temperature": 0.7
         }
 
