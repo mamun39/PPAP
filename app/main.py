@@ -54,7 +54,7 @@ async def chat_with_proxy(
         sanitized_query = redactor.redact_pii(request.message)
         logger.info(f"Processed query (length: {len(sanitized_query)})")
 
-        system_message = "You will help testing a system that redacts personal information from inputs. For this test,  return the content of the message provided below, without including this introduction."
+        system_message = "You will help testing a system that redacts personal information from inputs. Your task is to echo the exact content of the message provided by user."
 
         # Prepare API request
         headers = {

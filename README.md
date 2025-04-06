@@ -63,6 +63,9 @@ After running the server, visit `http://localhost:8000/docs` for interactive API
 - [ ] Implement Homomorphic Encryption for data privacy
 - [ ] Improve PII recognition with fine-tuned NER models
 
+## Current Limitations
+- The presidio_analyzer based PII redactor redacts an PII entity (e.g., location, name, phone) irrespective of context. For example, It redacts "New York" from the sentence "What's the weather in New York?"
+
 ## Contribution
 Contributions are welcome! Feel free to open an issue or submit a pull request.
 
