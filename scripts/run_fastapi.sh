@@ -7,5 +7,5 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
-# Step 2: Run the FastAPI application
-uvicorn app.main:app --reload
+# Step 2: Run the FastAPI application using Poetry
+poetry run uvicorn app.main:app --reload
