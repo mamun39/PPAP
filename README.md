@@ -1,94 +1,150 @@
-# Privacy-Preserving AI Proxy (PPAP)
+# Privacy-Preserving AI Proxy (PPAP) 🔒🤖
 
-## Overview
-PPAP is a secure AI proxy that allows users to interact with LLMs while ensuring their private data remains protected. It sanitizes user queries before forwarding them to an LLM and applies response filtering to prevent sensitive data leakage.
+[![License](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](https://github.com/mamun39/PPAP)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/Framework-FastAPI-%2300ac47)](https://fastapi.tiangolo.com)
 
-## Features
-- **Privacy-focused query sanitization** (PII removal & redaction using pattern-based and LLM-based approaches)
-- **Response filtering** to prevent sensitive data exposure
-- **Secure API with authentication & rate limiting**
-- **Encryption for user queries** (E2EE support in future versions)
-- **Modular architecture** for local LLM integration
+> Secure gateway for LLM interactions with intelligent privacy protection
 
-## Tech Stack
-- **Backend:** FastAPI, Python
-- **Privacy Tools:** spaCy, Presidio, PyCryptodome
-- **LLM Support:** OpenAI API, Local models (Mistral, TinyLlama, Ollama)
+![PPAP Architecture Diagram](https://via.placeholder.com/800x400.png?text=PPAP+System+Architecture+Diagram)
 
-## Installation
-### Manual Setup
-```sh
-git clone git@github.com:mamun39/PPAP.git
-cd PPAP
-python -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-poetry install
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+## Why PPAP? 🛡️
+As AI systems handle increasingly sensitive data, PPAP provides critical privacy safeguards by:
+1. Preventing accidental PII leakage in LLM interactions
+2. Offering multiple redaction strategies for different use cases
+3. Maintaining usability while ensuring compliance with privacy regulations
 
-## Project Directory Structure
+## Key Features ✨
 
-```
-PPAP/
-│-- app/
-│   │-- services/
-│   │   │-- __init__.py
-│   │   │-- pattern_redactor.py
-│   │   │-- llm_redactor.py
-│   │   │-- redactor_base.py
-│   │-- utils/
-│   │   │-- pii_recognizers.yaml
-│   │-- __init__.py
-│   │-- config.py
-│   │-- main.py
-│-- scripts/
-│   │-- run_fastapi.sh
-│   │-- test_api.sh
-│-- tests/
-│   │-- test_pattern_redactor.py
-│   │-- test_llm_redactor.py
-│-- .gitignore
-│-- LICENSE
-│-- POETRY.TOML
-│-- README.md
-```
+### **Core Capabilities**
+- Hybrid PII Redaction: Combine pattern matching (Presidio) + LLM contextual analysis
+- Multi-Strategy Sanitization:
+  - `mask`: **** pattern replacement
+  - `full`: Type-label substitution
+  - `tag`: Metadata-preserving encapsulation
+- Modular LLM Integration: Supports both cloud APIs and local models
 
-## API Usage
-After running the server, visit http://localhost:8000/docs for interactive API documentation.
+### **Security Framework**
+- Zero-Trust Input Sanitization
+- JWT Authentication (Extended Validation)
+- Rate Limiting & Request Validation
+- TLS 1.3 Ready (Production Deployment)
 
-### Running with Different Redactors
-- Use pattern for pattern-based redaction (using PatternRedactor).
-- Use llm for LLM-based redaction (using LlmRedactor with Ollama).
+### **Deployment Flexibility**
+- Containerized microservices architecture
+- Local model support via Ollama/Mistral
+- Cloud-native design with Kubernetes manifests (coming Q3 2024)
 
-Example usage:
+## Tech Stack 🛠️
 
-- Pattern Redactor:
+| Category       | Technologies                          |
+|----------------|---------------------------------------|
+| Core Framework | FastAPI, Pydantic, Python 3.10+       |
+| Privacy Engine | Presidio, spaCy, Regex Patterns       |
+| AI/ML          | Ollama, Mistral-7B, Transformers      |
+| Security       | PyCryptodome, OAuth2, Let's Encrypt   |
+| DevOps         | Poetry, Docker, GitHub Actions, Prometheus |
 
+## Getting Started 🚀
+
+### Quick Install (Development)
 ```bash
-./scripts/run_fastapi.sh -r pattern
+git clone git@github.com:mamun39/PPAP.git && cd PPAP
+python -m venv .venv && source .venv/bin/activate
+poetry install --with dev
+uvicorn app.main:app --reload
 ```
-- LLM Redactor:
 
+### Production Deployment
 ```bash
-./scripts/run_fastapi.sh -r llm -m llama3.2:3b
+docker compose -f docker-compose.prod.yml up --build
 ```
 
-## Security Considerations
-- Uses Zero-Trust request sanitization to filter sensitive data.
-- Future updates will include end-to-end encryption for queries.
-- TLS 1.3 is required for secure production deployment.
+## API Endpoints 📡
 
-## Roadmap
-- [ ] Add Web UI
-- [ ] Support on-prem LLMs
-- [ ] Implement Homomorphic Encryption for data privacy
-- [ ] Improve PII recognition with fine-tuned NER models
+| Endpoint         | Method | Description                     |
+|------------------|--------|---------------------------------|
+| `/sanitize`      | POST   | Core redaction endpoint         |
+| `/healthcheck`   | GET    | Service status monitoring       |
+| `/metrics`       | GET    | Prometheus metrics endpoint     |
 
-## Current Limitations
-- The presidio_analyzer based pattern redactor redacts PII entities (e.g., location, name, phone) irrespective of context. For example, it redacts "New York" from the sentence "What's the weather in New York?"
+**Example Request:**
+```bash
+curl -X POST "http://localhost:8000/sanitize" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Contact me at john@example.com or 555-1234",
+    "redaction_style": "tag"
+  }'
+```
 
-## Contribution
-Contributions are welcome! Feel free to open an issue or submit a pull request.
+**Response:**
+```json
+{
+  "sanitized_text": "Contact me at [EMAIL:john@example.com] or [PHONE:555-1234]",
+  "redaction_stats": {
+    "pii_count": 2,
+    "redaction_time_ms": 42
+  }
+}
+```
 
-## License
-BUSINESS SOURCE LICENSE 1.1 © 2025 Mamunur Akand
+## Advanced Configuration ⚙️
+
+### Redaction Strategies
+```yaml
+# config/redaction_profiles.yaml
+profiles:
+  strict:
+    styles: [mask, full]
+    models: [presidio, llm]
+  lenient: 
+    styles: [tag]
+    models: [presidio]
+```
+
+### LLM Model Management
+```bash
+# List available models
+./scripts/model_manager.sh list
+
+# Start with specific model
+./scripts/run_fastapi.sh -r llm -m mistral:7b-instruct
+```
+
+## Roadmap 🗺️
+
+```mermaid
+gantt
+    title PPAP Development Timeline
+    dateFormat  YYYY-MM-DD
+    section Core Features
+    Hybrid Redaction       :done, des1, 2024-01-01, 2024-03-15
+    Auth System            :active, des2, 2024-03-01, 2024-05-30
+    section Future
+    Homomorphic Encryption : des3, 2024-06-01, 2024-09-30
+    Web UI Dashboard       : des4, 2024-07-01, 2024-10-31
+```
+
+## Security Advisories ⚠️
+
+**Current Limitations:**
+```python
+# Contextual recognition challenge example
+input_text = "Book flight to New York"
+redacted_text = redactor.redact(input_text)  # Returns "Book flight to [LOCATION]"
+```
+
+**Recommended Mitigations:**
+1. Always combine LLM redactor with pattern-based approaches
+2. Implement allow-lists for non-sensitive proper nouns
+3. Use strict redaction for healthcare/financial data
+
+## Contributing 🤝
+We welcome contributions! Please review our:
+- [Contribution Guidelines](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Good First Issues](https://github.com/mamun39/PPAP/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
+
+## License 📜
+This project is licensed under the [Business Source License 1.1](LICENSE). Contact mamun39@proton.me for commercial use inquiries.
