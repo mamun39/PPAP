@@ -2,7 +2,7 @@ import pytest
 import yaml
 from presidio_analyzer import Pattern
 
-from app.services.privacy import PiiRedactor
+from app.services.pattern_redactor import PiiRedactor
 
 
 @pytest.fixture

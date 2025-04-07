@@ -2,13 +2,14 @@ import logging
 import yaml
 from typing import List, Optional, Union
 from presidio_analyzer import AnalyzerEngine, Pattern, PatternRecognizer, RecognizerResult
+from app.services.redactor_base import BaseRedactor
 
 # Configure logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("presidio-analyzer").setLevel(logging.ERROR)
 
-class PiiRedactor:
+class PatternRedactor(BaseRedactor):
     """
     A structured, extensible PII redaction system with configurable recognizers and multiple redaction styles.
     Supports Presidio, spaCy-based context detection, and dynamic recognizer addition.
@@ -183,7 +184,7 @@ class PiiRedactor:
 
 # Example Usage
 if __name__ == "__main__":
-    redactor = PiiRedactor(
+    redactor = PatternRedactor(
         redaction_style="mask",
         recognizer_config_path="app/utils/pii_recognizers.yaml"
     )

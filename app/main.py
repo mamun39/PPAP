@@ -4,7 +4,9 @@ from fastapi import FastAPI, Request, HTTPException, Depends
 from pydantic import BaseModel, Field
 import httpx
 from dotenv import load_dotenv
-from app.services.privacy import PiiRedactor
+from app.services.pattern_redactor import PatternRedactor
+from app.services.llm_redactor import LlmRedactor
+from app.services.redactor_base import BaseRedactor
 
 # Configure logging
 logging.basicConfig(
@@ -22,6 +24,12 @@ OPENAI_API_URL = os.getenv("OPENAI_API_URL", "https://api.openai.com/v1/chat/com
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY environment variable is required")
 
+# Get redactor configuration
+REDACTOR_TYPE = os.getenv("REDACTOR_TYPE", "pattern").lower()  # 'pattern' or 'llm'
+LLM_MODEL = os.getenv("LLM_MODEL", "llama3.2:3b")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+REDACTION_STYLE = os.getenv("REDACTION_STYLE", "mask")
+
 app = FastAPI(title="Privacy-Preserving AI Proxy (PPAP)", version="1.0.0")
 
 class ChatRequest(BaseModel):
@@ -31,17 +39,26 @@ class ChatRequest(BaseModel):
         max_length=2000,
         description="User message to be processed")
 
-async def get_redactor() -> PiiRedactor:
-    """Dependency that provides configured PiiRedactor instance"""
-    return PiiRedactor(
-        redaction_style="mask",
-        recognizer_config_path="app/utils/pii_recognizers.yaml"
-    )
+async def get_redactor() -> BaseRedactor:
+    """Dependency that provides configured redactor instance"""
+    if REDACTOR_TYPE == "llm":
+        logger.info(f"Using LLM redactor with model {LLM_MODEL}")
+        return LlmRedactor(
+            model_name=LLM_MODEL,
+            ollama_base_url=OLLAMA_URL,
+            redaction_style=REDACTION_STYLE
+        )
+    else:
+        logger.info(f"Using pattern-based redactor")
+        return PatternRedactor(
+            redaction_style=REDACTION_STYLE,
+            recognizer_config_path="app/utils/pii_recognizers.yaml"
+        )
 
 @app.post("/chat")
 async def chat_with_proxy(
     request: ChatRequest,
-    redactor: PiiRedactor = Depends(get_redactor)
+    redactor: BaseRedactor = Depends(get_redactor)
 ) -> dict:
     """
     Processes chat request through PII redaction and OpenAI API proxy
@@ -50,7 +67,7 @@ async def chat_with_proxy(
     - Returns: OpenAI API response with generated content
     """
     try:
-        # Redact sensitive information
+        # Redact sensitive information using the configured redactor
         sanitized_query = redactor.redact_pii(request.message)
         logger.info(f"Processed query (length: {len(sanitized_query)})")
 
@@ -106,5 +123,6 @@ async def health_check() -> dict:
     return {
         "status": "healthy",
         "version": app.version,
-        "environment": os.getenv("ENVIRONMENT", "development")
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        "redactor_type": REDACTOR_TYPE
     }
