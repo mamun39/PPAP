@@ -1,5 +1,10 @@
 # Privacy-Preserving AI Proxy (PPAP)
 
+[![License](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](https://github.com/mamun39/PPAP)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/Framework-FastAPI-%2300ac47)](https://fastapi.tiangolo.com)
+
+
 PPAP is a secure AI proxy designed to protect user privacy when interacting with Large Language Models (LLMs). It sanitizes user queries before forwarding them to an LLM and (in future releases) will filter LLM responses to further limit the risk of sensitive data exposure.
 
 ---
