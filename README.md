@@ -174,5 +174,5 @@ Contributions are welcome!
 
 ## License
 
-Distributed under the Business Source License 1.1 © 2025 Mamunur Akand.  
+Distributed under the MIT License © 2025 Mamunur Akand.  
 See [LICENSE](./LICENSE) for more information.
