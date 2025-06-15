@@ -1,6 +1,6 @@
 # Privacy-Preserving AI Proxy (PPAP)
 
-[![License](https://img.shields.io/badge/License-MIT%201.1-blue.svg)](https://github.com/mamun39/PPAP)
+[![License](https://img.shields.io/badge/License-MIT%20-blue.svg)](https://github.com/mamun39/PPAP)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/Framework-FastAPI-%2300ac47)](https://fastapi.tiangolo.com)
 
